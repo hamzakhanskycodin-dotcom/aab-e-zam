@@ -1,59 +1,87 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
+const { MongoClient } = require('mongodb');
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+// MongoDB Connection String (Atlas URI)
+const uri = process.env.MONGODB_URI || "mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@cluster0.mongodb.net/aabezam?retryWrites=true&w=majority";
+let client;
+let clientPromise;
 
-const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://username:password@cluster.mongodb.net/waterDB";
-mongoose.connect(MONGO_URI).then(() => console.log("Cloud Database Connected"));
+if (!global._mongoClientPromise) {
+  client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+  global._mongoClientPromise = client.connect();
+}
+clientPromise = global._mongoClientPromise;
 
-// FIXED SCHEMA: Isme ab totalSupplyField lazmi save hogi backend par
-const LogSchema = new mongoose.Schema({
-    date: String, 
-    counterSale: Number, 
-    hamzaSupplier: Number, 
-    arsalanBhai: Number,
-    makkahPlant: Number, 
-    juttPlant: Number, 
-    totalSupplyField: Number, // <-- Added securely
-    borrowBottles: Number, 
-    fuelExp: Number, 
-    otherExp: Number
-});
-const Log = mongoose.model('Log', LogSchema);
+module.exports = async (req, res) => {
+  // Cross-Origin Settings for Laptop <-> Mobile validation
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
-app.get('/api/logs', async (req, res) => {
-    try {
-        const logs = await Log.find();
-        let summary = { counterSales: 0, totalSupply: 0, borrowedBottles: 0, hamzaSupplier: 0, arsalanBhai: 0, makkahPlant: 0, juttPlant: 0, fuelExp: 0, otherExp: 0 };
-        
-        logs.forEach(log => {
-            summary.counterSales += (log.counterSale || 0);
-            summary.borrowedBottles += (log.borrowBottles || 0);
-            summary.hamzaSupplier += (log.hamzaSupplier || 0);
-            summary.arsalanBhai += (log.arsalanBhai || 0);
-            summary.makkahPlant += (log.makkahPlant || 0);
-            summary.juttPlant += (log.juttPlant || 0);
-            summary.totalSupply += (log.totalSupplyField || 0); // <-- Sum calculations fixed
-            summary.fuelExp += (log.fuelExp || 0);
-            summary.otherExp += (log.otherExp || 0);
-        });
-        res.json({ logs, summary });
-    } catch (err) {
-        res.status(500).json(err);
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  try {
+    const mongoClient = await clientPromise;
+    const db = mongoClient.db("aabezam_db");
+    const logsCollection = db.collection("monthly_logs");
+    const customersCollection = db.collection("customers_ledger");
+
+    const { url } = req;
+
+    // 1. ROUTE: GET /api/logs (Fetch 31-Day full data chart)
+    if (url.includes('/api/logs') && req.method === 'GET') {
+      const data = await logsCollection.findOne({ type: "main_chart" });
+      if (data) {
+        return res.status(200).json(data.rows);
+      } else {
+        // Fallback initial data grid schema if empty
+        const initialRows = Array.from({ length: 31 }, (_, i) => ({
+          date: `Day ${i + 1}`, counterSale: '', hamzaSupplier: '', arsalanBhai: '', makkahPlant: '', juttPlant: '', totalSupplyField: '', borrowBottles: '', fuelExp: '', otherExp: ''
+        }));
+        return res.status(200).json(initialRows);
+      }
     }
-});
 
-app.post('/api/logs', async (req, res) => {
-    try {
-        // Purane record ko update karein ya naya banayein takay data overwrite na ho refresh par
-        await Log.findOneAndUpdate({ date: req.body.date }, req.body, { upsert: true, new: true });
-        res.sendStatus(200);
-    } catch (err) {
-        res.status(500).json(err);
+    // 2. ROUTE: POST /api/logs (Save complete 31-Day rows matrix)
+    if (url.includes('/api/logs') && req.method === 'POST') {
+      const updatedRows = req.body;
+      await logsCollection.updateOne(
+        { type: "main_chart" },
+        { $set: { type: "main_chart", rows: updatedRows, lastUpdated: new Date() } },
+        { upsert: true }
+      );
+      return res.status(200).json({ success: true, message: "Logs synced to Cloud MongoDB" });
     }
-});
 
-module.exports = app;
+    // 3. ROUTE: GET /api/customers (Fetch all customer matrix nodes)
+    if (url.includes('/api/customers') && req.method === 'GET') {
+      const data = await customersCollection.findOne({ type: "attendance_ledger" });
+      if (data) {
+        return res.status(200).json(data.list);
+      } else {
+        return res.status(200).json([]);
+      }
+    }
+
+    // 4. ROUTE: POST /api/customers (Save completely unified customers lists)
+    if (url.includes('/api/customers') && req.method === 'POST') {
+      const updatedCustomers = req.body;
+      await customersCollection.updateOne(
+        { type: "attendance_ledger" },
+        { $set: { type: "attendance_ledger", list: updatedCustomers, lastUpdated: new Date() } },
+        { upsert: true }
+      );
+      return res.status(200).json({ success: true, message: "Customer ledger synced directly" });
+    }
+
+    // Default API Fallback route pointer
+    return res.status(404).json({ error: "Route configuration target mismatch" });
+
+  } catch (error) {
+    console.error("MongoDB Server Error:", error);
+    return res.status(500).json({ error: "Internal Database Server Breakdown", details: error.message });
+  }
+};
