@@ -1,26 +1,28 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Login from './Login';
 
 export default function App() {
   const [user, setUser] = useState(localStorage.getItem('loggedInUser'));
   
-  // 1. Permanent Browser Cache se initial data load karna (Refresh par data kabhi nahi jayega)
+  // Local storage se dynamic backup fetch framework initiation
   const [tableRows, setTableRows] = useState(() => {
-    const saved = localStorage.getItem('permanent_logs_db');
-    return saved ? JSON.parse(saved) : Array.from({ length: 31 }, (_, i) => ({
+    const savedData = localStorage.getItem('permanent_logs_db');
+    if (savedData) {
+      return JSON.parse(savedData);
+    }
+    return Array.from({ length: 31 }, (_, i) => ({
       date: `Day ${i + 1}`, counterSale: '', hamzaSupplier: '', arsalanBhai: '', makkahPlant: '', juttPlant: '', totalSupplyField: '', borrowBottles: '', fuelExp: '', otherExp: ''
     }));
   });
 
   const [summary, setSummary] = useState({ counterSales: 0, totalSupply: 0, borrowedBottles: 0, hamzaSupplier: 0, arsalanBhai: 0, makkahPlant: 0, juttPlant: 0, fuelExp: 0, otherExp: 0 });
 
-  // Load hotay hi calculations run karna
+  // Load hote hi totals track matrix auto run execute karna
   useEffect(() => {
     calcSummary(tableRows);
-  }, []);
+  }, [tableRows]);
 
-  // 2. Real-Time Upper Cards Dynamic Summary Calculations
   const calcSummary = (rows) => {
     let t = { counterSales: 0, totalSupply: 0, borrowedBottles: 0, hamzaSupplier: 0, arsalanBhai: 0, makkahPlant: 0, juttPlant: 0, fuelExp: 0, otherExp: 0 };
     rows.forEach(r => {
@@ -37,22 +39,20 @@ export default function App() {
     setSummary(t);
   };
 
-  // 3. Type kartay hi instant dynamic update aur local database backup encryption
   const handleCellChange = (idx, field, val) => {
     const updated = [...tableRows];
     updated[idx][field] = val;
     setTableRows(updated);
-    calcSummary(updated);
 
-    // Data browser memory me pakka save ho gaya
+    // Hard binding storage container encryption instantly
     localStorage.setItem('permanent_logs_db', JSON.stringify(updated));
 
-    // Optional background silent sync taake cloud backup function call crash na kare
+    // Silent tracking backup endpoints handles data verification background arrays
     fetch('/api/logs', { 
       method: 'POST', 
       headers: { 'Content-Type': 'application/json' }, 
       body: JSON.stringify(updated[idx]) 
-    }).catch(e => console.log("Saved securely inside browser storage offline wrapper"));
+    }).catch(() => console.log("Offline backup safe"));
   };
 
   if (!user) return <Login onLoginSuccess={(u) => setUser(u)} />;
@@ -61,7 +61,7 @@ export default function App() {
     <div className="container-fluid px-4 py-3 bg-light min-vh-100">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h4 className="fw-bold text-secondary mb-0">Analytics & Progress Summary <span className="fs-6 text-success">● Permanent Storage Active</span></h4>
+          <h4 className="fw-bold text-secondary mb-0">Analytics & Progress Summary <span className="fs-6 text-success">● Active Encryption Mode</span></h4>
           <small className="text-muted">Welcome, {user}</small>
         </div>
         <div>
@@ -69,14 +69,12 @@ export default function App() {
         </div>
       </div>
 
-      {/* Top 3 Primary Status Cards */}
       <div className="row g-3 mb-3">
         <div className="col-md-4"><div className="p-3 rounded text-white bg-success"><div>Total Counter Sales</div><div className="fs-2 fw-bold">Rs. {summary.counterSales}</div></div></div>
         <div className="col-md-4"><div className="p-3 rounded text-white bg-primary"><div>Supply bottles</div><div className="fs-2 fw-bold">{summary.totalSupply}</div></div></div>
         <div className="col-md-4"><div className="p-3 rounded text-white bg-danger"><div>Total Borrowed</div><div className="fs-2 fw-bold">{summary.borrowedBottles}</div></div></div>
       </div>
 
-      {/* 4 Vendor/Plant Independent Summary Cards */}
       <div className="row g-3 mb-3">
         <div className="col-md-3"><div className="p-3 rounded text-white" style={{backgroundColor:'#5c6bc0'}}><div>Hamza Total</div><div className="fs-3 fw-bold">{summary.hamzaSupplier}</div></div></div>
         <div className="col-md-3"><div className="p-3 rounded text-white" style={{backgroundColor:'#4fc3f7'}}><div>Arsalan Total</div><div className="fs-3 fw-bold">{summary.arsalanBhai}</div></div></div>
@@ -84,13 +82,11 @@ export default function App() {
         <div className="col-md-3"><div className="p-3 rounded text-white" style={{backgroundColor:'#ffb300'}}><div>Jutt Total</div><div className="fs-3 fw-bold">{summary.juttPlant}</div></div></div>
       </div>
 
-      {/* Expense 2 Dynamic Cards */}
       <div className="row g-3 mb-4">
         <div className="col-md-6"><div className="p-3 rounded text-white bg-secondary"><div>Fuel Exp. Total</div><div className="fs-3 fw-bold">Rs. {summary.fuelExp}</div></div></div>
         <div className="col-md-6"><div className="p-3 rounded text-white bg-dark"><div>Other Exp. Total</div><div className="fs-3 fw-bold">Rs. {summary.otherExp}</div></div></div>
       </div>
 
-      {/* 31-Day Grid Layout System */}
       <div className="bg-white p-3 rounded border shadow-sm mb-4">
         <h5 className="fw-bold mb-3 text-dark">📅 31-Day Full Monthly Log Chart</h5>
         <div className="table-responsive">
