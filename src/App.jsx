@@ -123,59 +123,59 @@ export default function App() {
 }
 
 
-{/* ==================== NEW INDEPENDENT CARD FOR CUSTOMERS CHAT SHEET ==================== */ }
-<div className="bg-white p-4 rounded border shadow-sm mb-4">
-    <div className="d-flex justify-content-between align-items-center mb-3">
-        <h5 className="fw-bold m-0 text-dark">📋 Customers Bottles Supply Log (Day 1 to 31)</h5>
-        <button className="btn btn-success fw-bold px-3 shadow-sm" style={{ fontSize: '0.85rem', backgroundColor: '#198754' }} onClick={addCustomer}>
-            + Add New Customer
-        </button>
-    </div>
+// {/* ==================== NEW INDEPENDENT CARD FOR CUSTOMERS CHAT SHEET ==================== */ }
+// <div className="bg-white p-4 rounded border shadow-sm mb-4">
+//     <div className="d-flex justify-content-between align-items-center mb-3">
+//         <h5 className="fw-bold m-0 text-dark">📋 Customers Bottles Supply Log (Day 1 to 31)</h5>
+//         <button className="btn btn-success fw-bold px-3 shadow-sm" style={{ fontSize: '0.85rem', backgroundColor: '#198754' }} onClick={addCustomer}>
+//             + Add New Customer
+//         </button>
+//     </div>
 
-    <div className="table-responsive" style={{ overflowX: 'auto' }}>
-        <table className="table table-bordered align-middle m-0 text-center table-sm">
-            <thead className="table-dark" style={{ fontSize: '0.75rem' }}>
-                <tr>
-                    <th style={{ minWidth: '150px' }} className="text-start ps-2">Customer Name</th>
-                    {Array.from({ length: 31 }, (_, i) => (
-                        <th key={i} style={{ minWidth: '45px' }}>D{i + 1}</th>
-                    ))}
-                    <th style={{ minWidth: '90px', backgroundColor: '#0d6efd' }} className="text-white">TOTAL</th>
-                    <th style={{ minWidth: '40px' }}>DEL</th>
-                </tr>
-            </thead>
-            <tbody style={{ fontSize: '0.85rem' }}>
-                {customers.map((c, cIdx) => (
-                    <tr key={c.id}>
-                        <td className="text-start fw-semibold ps-2 bg-light text-dark">{c.name}</td>
-                        {c.entries.map((ev, dIdx) => (
-                            <td key={dIdx} className="p-0">
-                                <input type="number" className="form-control form-control-sm text-center border-0 bg-transparent rounded-0" style={{ padding: '4px 1px', fontSize: '0.8rem' }} value={ev} placeholder="0" onChange={(e) => handleCustChange(cIdx, dIdx, e.target.value)} />
-                            </td>
-                        ))}
-                        <td className="fw-bold bg-primary text-white">{c.entries.reduce((s, v) => s + (Number(v) || 0), 0)}</td>
-                        <td>
-                            <button className="btn btn-link text-danger p-0 border-0 fw-bold fs-6 text-decoration-none" onClick={() => removeCustomer(c.id, c.name)}>×</button>
-                        </td>
-                    </tr>
-                ))}
+//     <div className="table-responsive" style={{ overflowX: 'auto' }}>
+//         <table className="table table-bordered align-middle m-0 text-center table-sm">
+//             <thead className="table-dark" style={{ fontSize: '0.75rem' }}>
+//                 <tr>
+//                     <th style={{ minWidth: '150px' }} className="text-start ps-2">Customer Name</th>
+//                     {Array.from({ length: 31 }, (_, i) => (
+//                         <th key={i} style={{ minWidth: '45px' }}>D{i + 1}</th>
+//                     ))}
+//                     <th style={{ minWidth: '90px', backgroundColor: '#0d6efd' }} className="text-white">TOTAL</th>
+//                     <th style={{ minWidth: '40px' }}>DEL</th>
+//                 </tr>
+//             </thead>
+//             <tbody style={{ fontSize: '0.85rem' }}>
+//                 {customers.map((c, cIdx) => (
+//                     <tr key={c.id}>
+//                         <td className="text-start fw-semibold ps-2 bg-light text-dark">{c.name}</td>
+//                         {c.entries.map((ev, dIdx) => (
+//                             <td key={dIdx} className="p-0">
+//                                 <input type="number" className="form-control form-control-sm text-center border-0 bg-transparent rounded-0" style={{ padding: '4px 1px', fontSize: '0.8rem' }} value={ev} placeholder="0" onChange={(e) => handleCustChange(cIdx, dIdx, e.target.value)} />
+//                             </td>
+//                         ))}
+//                         <td className="fw-bold bg-primary text-white">{c.entries.reduce((s, v) => s + (Number(v) || 0), 0)}</td>
+//                         <td>
+//                             <button className="btn btn-link text-danger p-0 border-0 fw-bold fs-6 text-decoration-none" onClick={() => removeCustomer(c.id, c.name)}>×</button>
+//                         </td>
+//                     </tr>
+//                 ))}
 
-                {/* VERTICAL AND GRAND TOTALS SUMMARY ROW */}
-                {customers.length > 0 && (
-                    <tr className="table-secondary fw-bold border-top border-dark" style={{ fontSize: '0.78rem' }}>
-                        <td className="text-start ps-2 text-dark">DAILY TOTAL</td>
-                        {Array.from({ length: 31 }, (_, dIdx) => (
-                            <td key={dIdx} className="text-dark">
-                                {customers.reduce((s, c) => s + (Number(c.entries[dIdx]) || 0), 0)}
-                            </td>
-                        ))}
-                        <td className="bg-dark text-warning">
-                            {customers.reduce((gs, c) => gs + c.entries.reduce((s, v) => s + (Number(v) || 0), 0), 0)}
-                        </td>
-                        <td className="bg-secondary"></td>
-                    </tr>
-                )}
-            </tbody>
-        </table>
-    </div>
-</div>
+//                 {/* VERTICAL AND GRAND TOTALS SUMMARY ROW */}
+//                 {customers.length > 0 && (
+//                     <tr className="table-secondary fw-bold border-top border-dark" style={{ fontSize: '0.78rem' }}>
+//                         <td className="text-start ps-2 text-dark">DAILY TOTAL</td>
+//                         {Array.from({ length: 31 }, (_, dIdx) => (
+//                             <td key={dIdx} className="text-dark">
+//                                 {customers.reduce((s, c) => s + (Number(c.entries[dIdx]) || 0), 0)}
+//                             </td>
+//                         ))}
+//                         <td className="bg-dark text-warning">
+//                             {customers.reduce((gs, c) => gs + c.entries.reduce((s, v) => s + (Number(v) || 0), 0), 0)}
+//                         </td>
+//                         <td className="bg-secondary"></td>
+//                     </tr>
+//                 )}
+//             </tbody>
+//         </table>
+//     </div>
+// </div>
