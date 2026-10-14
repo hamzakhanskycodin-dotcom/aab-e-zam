@@ -3,14 +3,21 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import Login from './Login';
 
 export default function App() {
-  const [user, setUser] = useState(localStorage.getItem('loggedInUser'));
+  // FIXED: sessionStorage se real-time dynamic secure session token read karna
+  const [user, setUser] = useState(() => sessionStorage.getItem('loggedInUser'));
   
-  // Local storage se dynamic backup fetch framework initiation
+  // Reload aur tab security enforce karne ke liye window unload check listener
+  useEffect(() => {
+    const handleReloadLock = () => {
+      sessionStorage.removeItem('loggedInUser');
+    };
+    window.addEventListener('beforeunload', handleReloadLock);
+    return () => window.removeEventListener('beforeunload', handleReloadLock);
+  }, []);
+
   const [tableRows, setTableRows] = useState(() => {
     const savedData = localStorage.getItem('permanent_logs_db');
-    if (savedData) {
-      return JSON.parse(savedData);
-    }
+    if (savedData) return JSON.parse(savedData);
     return Array.from({ length: 31 }, (_, i) => ({
       date: `Day ${i + 1}`, counterSale: '', hamzaSupplier: '', arsalanBhai: '', makkahPlant: '', juttPlant: '', totalSupplyField: '', borrowBottles: '', fuelExp: '', otherExp: ''
     }));
@@ -18,7 +25,6 @@ export default function App() {
 
   const [summary, setSummary] = useState({ counterSales: 0, totalSupply: 0, borrowedBottles: 0, hamzaSupplier: 0, arsalanBhai: 0, makkahPlant: 0, juttPlant: 0, fuelExp: 0, otherExp: 0 });
 
-  // Load hote hi totals track matrix auto run execute karna
   useEffect(() => {
     calcSummary(tableRows);
   }, [tableRows]);
@@ -43,11 +49,8 @@ export default function App() {
     const updated = [...tableRows];
     updated[idx][field] = val;
     setTableRows(updated);
-
-    // Hard binding storage container encryption instantly
     localStorage.setItem('permanent_logs_db', JSON.stringify(updated));
 
-    // Silent tracking backup endpoints handles data verification background arrays
     fetch('/api/logs', { 
       method: 'POST', 
       headers: { 'Content-Type': 'application/json' }, 
@@ -61,11 +64,11 @@ export default function App() {
     <div className="container-fluid px-4 py-3 bg-light min-vh-100">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h4 className="fw-bold text-secondary mb-0">Analytics & Progress Summary <span className="fs-6 text-success">● Active Encryption Mode</span></h4>
+          <h4 className="fw-bold text-secondary mb-0">Analytics & Progress Summary <span className="fs-6 text-danger">● Secure Session</span></h4>
           <small className="text-muted">Welcome, {user}</small>
         </div>
         <div>
-          <button className="btn btn-danger btn-sm fw-bold px-3 shadow-sm" onClick={() => { localStorage.removeItem('loggedInUser'); setUser(null); }}>Logout</button>
+          <button className="btn btn-danger btn-sm fw-bold px-3 shadow-sm" onClick={() => { sessionStorage.clear(); setUser(null); }}>Logout</button>
         </div>
       </div>
 

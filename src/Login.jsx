@@ -11,7 +11,8 @@ export default function Login({ onLoginSuccess }) {
     const user = username.trim().toUpperCase();
 
     if ((user === 'HAMZA' && password === 'hamza123') || (user === 'AYAN' && password === 'ayan123')) {
-      localStorage.setItem('loggedInUser', user);
+      // FIXED: localStorage ki jagah sessionStorage use kiya takay reload par lock ho jaye
+      sessionStorage.setItem('loggedInUser', user);
       setErrorMessage('');
       onLoginSuccess(user); 
     } else {
