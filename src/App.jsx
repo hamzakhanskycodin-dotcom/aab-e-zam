@@ -6,7 +6,7 @@ export default function App() {
     // Session handling
     const [user, setUser] = useState(() => sessionStorage.getItem('loggedInUser'));
 
-    // 1. Monthly Table Rows State
+    // 1. Monthly Summary Table Rows State
     const [tableRows, setTableRows] = useState(() => {
         const savedData = localStorage.getItem('permanent_logs_db');
         if (savedData) return JSON.parse(savedData);
@@ -24,20 +24,30 @@ export default function App() {
         }));
     });
 
-    // 2. Customers Table State
+    // 2. Customers Table State (Protected 31-day data structure)
     const [customers, setCustomers] = useState(() => {
-        const savedCustomers = localStorage.getItem('customers_db');
-        if (savedCustomers) return JSON.parse(savedCustomers);
+        const savedCustomers = localStorage.getItem('customers_attendance_db');
+        if (savedCustomers) {
+            try {
+                const parsed = JSON.parse(savedCustomers);
+                if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].days) {
+                    return parsed;
+                }
+            } catch (e) {
+                console.error("Local data parse error:", e);
+            }
+        }
+
+        const initialDays = Array.from({ length: 31 }, (_, i) => ({ day: i + 1, value: '' }));
         return [
-            { id: 1, name: 'Ali Ahmed', phone: '0300-1234567', rate: 200, delivered: '', returned: '', paid: '' },
-            { id: 2, name: 'Kashif Khan', phone: '0321-7654321', rate: 220, delivered: '', returned: '', paid: '' }
+            { id: 1, name: 'Ali Ahmed', phone: '0300-1234567', days: [...initialDays] },
+            { id: 2, name: 'Kashif Khan', phone: '0321-7654321', days: [...initialDays] }
         ];
     });
 
     // New Customer Form State
     const [newCustName, setNewCustName] = useState('');
     const [newCustPhone, setNewCustPhone] = useState('');
-    const [newCustRate, setNewCustRate] = useState('');
 
     // Live total calculations for top summary cards
     const summary = tableRows.reduce(
@@ -56,7 +66,7 @@ export default function App() {
         { counterSales: 0, totalSupply: 0, borrowedBottles: 0, hamzaSupplier: 0, arsalanBhai: 0, makkahPlant: 0, juttPlant: 0, fuelExp: 0, otherExp: 0 }
     );
 
-    // Monthly Table Input Handler
+    // Summary Table Handler
     const handleCellChange = (idx, field, val) => {
         const updated = tableRows.map((row, i) =>
             i === idx ? { ...row, [field]: val } : row
@@ -71,13 +81,17 @@ export default function App() {
         }).catch(() => console.log("Offline backup safe"));
     };
 
-    // Customer Table Input Handler
-    const handleCustomerCellChange = (id, field, val) => {
-        const updated = customers.map(c =>
-            c.id === id ? { ...c, [field]: val } : c
-        );
+    // Customer 31-Day Attendance Cell Input Handler
+    const handleCustomerDayChange = (custId, dayNum, val) => {
+        const updated = customers.map(c => {
+            if (c.id === custId) {
+                const updatedDays = c.days.map(d => d.day === dayNum ? { ...d, value: val } : d);
+                return { ...c, days: updatedDays };
+            }
+            return c;
+        });
         setCustomers(updated);
-        localStorage.setItem('customers_db', JSON.stringify(updated));
+        localStorage.setItem('customers_attendance_db', JSON.stringify(updated));
     };
 
     // Add New Customer Function
@@ -89,27 +103,23 @@ export default function App() {
             id: Date.now(),
             name: newCustName,
             phone: newCustPhone || 'N/A',
-            rate: Number(newCustRate) || 200,
-            delivered: '',
-            returned: '',
-            paid: ''
+            days: Array.from({ length: 31 }, (_, i) => ({ day: i + 1, value: '' }))
         };
 
         const updatedCustomers = [...customers, newCustomer];
         setCustomers(updatedCustomers);
-        localStorage.setItem('customers_db', JSON.stringify(updatedCustomers));
+        localStorage.setItem('customers_attendance_db', JSON.stringify(updatedCustomers));
 
         setNewCustName('');
         setNewCustPhone('');
-        setNewCustRate('');
     };
 
-    // Delete Customer Function
+    // Delete Customer
     const handleDeleteCustomer = (id) => {
         if (window.confirm("Kya aap waqai is customer ko delete karna chahte hain?")) {
             const updated = customers.filter(c => c.id !== id);
             setCustomers(updated);
-            localStorage.setItem('customers_db', JSON.stringify(updated));
+            localStorage.setItem('customers_attendance_db', JSON.stringify(updated));
         }
     };
 
@@ -183,80 +193,73 @@ export default function App() {
                     </table>
                 </div>
             </div>
-                {/* TABLE 2: New Customer Management Ledger with 31 Columns */}
-      <div className="bg-white p-3 rounded border shadow-sm mb-4">
-        <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
-          <h5 className="fw-bold mb-0 text-dark">👥 Customer 31-Day Delivery Log Ledger</h5>
-          <form onSubmit={handleAddCustomer} className="d-flex align-items-center gap-2 flex-wrap">
-            <input type="text" className="form-control form-control-sm" style={{width: '180px'}} placeholder="Customer Name" value={newCustName} onChange={e => setNewCustName(e.target.value)} required />
-            <input type="text" className="form-control form-control-sm" style={{width: '150px'}} placeholder="Phone / Route Details" value={newCustPhone} onChange={e => setNewCustPhone(e.target.value)} />
-            <button type="submit" className="btn btn-success btn-sm fw-bold px-3">+ Add Customer</button>
-          </form>
+
+            {/* TABLE 2: Customer Ledger with 31 Dynamic Columns */}
+            <div className="bg-white p-3 rounded border shadow-sm mb-4">
+                <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+                    <h5 className="fw-bold mb-0 text-dark">👥 Customer 31-Day Delivery Log Ledger</h5>
+                    <form onSubmit={handleAddCustomer} className="d-flex align-items-center gap-2 flex-wrap">
+                        <input type="text" className="form-control form-control-sm" style={{ width: '180px' }} placeholder="Customer Name" value={newCustName} onChange={e => setNewCustName(e.target.value)} required />
+                        <input type="text" className="form-control form-control-sm" style={{ width: '150px' }} placeholder="Phone / Route Details" value={newCustPhone} onChange={e => setNewCustPhone(e.target.value)} />
+                        <button type="submit" className="btn btn-success btn-sm fw-bold px-3">+ Add Customer</button>
+                    </form>
+                </div>
+
+                <div className="table-responsive">
+                    <table className="table table-bordered text-center align-middle m-0 table-sm" style={{ minWidth: '1600px' }}>
+                        <thead className="table-primary text-dark" style={{ fontSize: '0.78rem' }}>
+                            <tr>
+                                <th style={{ width: '220px' }} className="position-sticky start-0 bg-primary text-white shadow-sm">CUSTOMER DETAILS</th>
+                                {Array.from({ length: 31 }, (_, i) => (
+                                    <th key={i} style={{ minWidth: '42px', fontSize: '0.75rem' }}>D{i + 1}</th>
+                                ))}
+                                <th style={{ minWidth: '65px' }} className="bg-dark text-white">TOTAL</th>
+                                <th>ACTION</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {customers.length === 0 ? (
+                                <tr>
+                                    <td colSpan="34" className="text-muted p-3">Koi customer nahi mila. Upar se add karein.</td>
+                                </tr>
+                            ) : (
+                                customers.map((c) => {
+                                    const totalDelivered = c.days ? c.days.reduce((sum, d) => sum + (Number(d.value) || 0), 0) : 0;
+
+                                    return (
+                                        <tr key={c.id}>
+                                            <td className="text-start ps-3 fw-bold bg-light position-sticky start-0 shadow-sm">
+                                                <div className="text-truncate" style={{ maxWidth: '190px' }}>{c.name}</div>
+                                                <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>{c.phone}</small>
+                                            </td>
+
+                                            {c.days && c.days.map((d) => (
+                                                <td key={d.day} className="p-0">
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        className="form-control form-control-sm text-center border-0 bg-transparent p-1"
+                                                        style={{ fontSize: '0.8rem', height: '35px' }}
+                                                        placeholder="-"
+                                                        value={d.value}
+                                                        onChange={(e) => handleCustomerDayChange(c.id, d.day, e.target.value)}
+                                                    />
+                                                </td>
+                                            ))}
+
+                                            <td className="fw-bold bg-warning-subtle text-dark">{totalDelivered}</td>
+                                            <td>
+                                                <button type="button" className="btn btn-outline-danger btn-xs py-0 px-2" style={{ fontSize: '0.7rem' }} onClick={() => handleDeleteCustomer(c.id)}>Delete</button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+                <small className="text-muted d-block mt-2">💡 Tip: Customer columns locked hain, aage scroll karke pure 31 din manage karein.</small>
+            </div>
         </div>
-
-        <div className="table-responsive">
-          <table className="table table-bordered text-center align-middle m-0 table-sm" style={{ minWidth: '1500px' }}>
-            <thead className="table-primary text-dark" style={{ fontSize: '0.78rem' }}>
-              <tr>
-                <th style={{ width: '220px', zIndex: 2 }} className="position-sticky start-0 bg-primary text-white">CUSTOMER DETAILS</th>
-                {Array.from({ length: 31 }, (_, i) => (
-                  <th key={i} style={{ minWidth: '45px', fontSize: '0.75rem' }}>D{i + 1}</th>
-                ))}
-                <th style={{ minWidth: '65px' }} className="bg-dark text-white">TOTAL</th>
-                <th>ACTION</th>
-              </tr>
-            </thead>
-            <tbody>
-              {customers.length === 0 ? (
-                <tr>
-                  <td colSpan="34" className="text-muted p-3">Koi customer nahi mila. Upar se add karein.</td>
-                </tr>
-              ) : (
-                customers.map((c) => {
-                  // Calculate total delivered bottles for the customer automatically
-                  const totalDelivered = c.days.reduce((sum, d) => sum + (Number(d.value) || 0), 0);
-
-                  return (
-                    <tr key={c.id}>
-                      {/* Fixed name column so you can scroll right comfortably */}
-                      <td className="text-start ps-3 fw-bold bg-light position-sticky start-0 shadow-sm" style={{ zIndex: 1 }}>
-                        <div className="text-truncate" style={{ maxWidth: '190px' }}>{c.name}</div>
-                        <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>{c.phone}</small>
-                      </td>
-                      
-                      {/* 31 Horizontal Day Input Fields */}
-                      {c.days.map((d) => (
-                        <td key={d.day} className="p-0">
-                          <input 
-                            type="number" 
-                            min="0"
-                            className="form-control form-control-sm text-center border-0 bg-transparent p-1" 
-                            style={{ fontSize: '0.8rem', height: '35px' }}
-                            placeholder="-" 
-                            value={d.value} 
-                            onChange={(e) => handleCustomerDayChange(c.id, d.day, e.target.value)} 
-                          />
-                        </td>
-                      ))}
-
-                      {/* Total Column */}
-                      <td className="fw-bold bg-warning-subtle text-dark">
-                        {totalDelivered}
-                      </td>
-
-                      {/* Delete Action Button */}
-                      <td>
-                        <button type="button" className="btn btn-outline-danger btn-xs py-0 px-2" style={{ fontSize: '0.7rem' }} onClick={() => handleDeleteCustomer(c.id)}>Delete</button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-        <small className="text-muted d-block mt-2">💡 Tip: Har customer ka row horizontal scroll karke Day 1 se Day 31 tak control kar sakte hain. Customer column screen par locked rahega.</small>
-      </div>
-    </div>
-  );
+    );
 }
