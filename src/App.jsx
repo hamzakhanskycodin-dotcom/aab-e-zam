@@ -62,8 +62,7 @@ export default function App() {
           <small className="text-muted">Welcome, {user}</small>
         </div>
         <div>
-          <button className="btn btn-warning btn-sm fw-bold px-3 me-2">📊 Sheet</button>
-          <button className="btn btn-danger btn-sm fw-bold px-3" onClick={() => { localStorage.removeItem('loggedInUser'); setUser(null); }}>Logout</button>
+          <button className="btn btn-danger btn-sm fw-bold px-3 shadow-sm" onClick={() => { localStorage.removeItem('loggedInUser'); setUser(null); }}>Logout</button>
         </div>
       </div>
 
@@ -85,11 +84,11 @@ export default function App() {
         <div className="col-md-6"><div className="p-3 rounded text-white bg-dark"><div>Other Exp. Total</div><div className="fs-3 fw-bold">Rs. {summary.otherExp}</div></div></div>
       </div>
 
-      <div className="bg-white p-3 rounded border">
-        <h5 className="fw-bold mb-3 text-dark">📅 31-Day Real-Time Log Grid</h5>
-        <div className="table-responsive" style={{maxHeight: '500px', overflowY: 'auto'}}>
+      <div className="bg-white p-3 rounded border shadow-sm mb-4">
+        <h5 className="fw-bold mb-3 text-dark">📅 31-Day Full Monthly Log Chart</h5>
+        <div className="table-responsive">
           <table className="table table-bordered text-center align-middle m-0 table-sm">
-            <thead className="table-dark sticky-top" style={{fontSize: '0.8rem'}}>
+            <thead className="table-dark" style={{fontSize: '0.8rem'}}>
               <tr>
                 <th>DATE</th><th style={{color:'#2ea44f'}}>COUNTER SALE</th><th>HAMZA</th><th>ARSALAN</th><th>MAKKAH</th><th>JUTT</th><th style={{color:'#0d6efd'}}>TOTAL</th><th style={{color:'#dc3545'}}>BORROW</th><th>FUEL</th><th>OTHER</th>
               </tr>
@@ -99,13 +98,13 @@ export default function App() {
                 const total = (Number(r.hamzaSupplier)||0) + (Number(r.arsalanBhai)||0) + (Number(r.makkahPlant)||0) + (Number(r.juttPlant)||0);
                 return (
                   <tr key={i}>
-                    <td className="fw-bold bg-light">{r.date}</td>
+                    <td className="fw-bold bg-light" style={{fontSize:'0.85rem'}}>{r.date}</td>
                     <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent" value={r.counterSale} onChange={(e) => handleCellChange(i, 'counterSale', e.target.value)} placeholder="0" /></td>
                     <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent" value={r.hamzaSupplier} onChange={(e) => handleCellChange(i, 'hamzaSupplier', e.target.value)} placeholder="0" /></td>
                     <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent" value={r.arsalanBhai} onChange={(e) => handleCellChange(i, 'arsalanBhai', e.target.value)} placeholder="0" /></td>
                     <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent" value={r.makkahPlant} onChange={(e) => handleCellChange(i, 'makkahPlant', e.target.value)} placeholder="0" /></td>
                     <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent" value={r.juttPlant} onChange={(e) => handleCellChange(i, 'juttPlant', e.target.value)} placeholder="0" /></td>
-                    <td className="text-primary fw-bold bg-light">{total}</td>
+                    <td className="text-primary fw-bold bg-light" style={{fontSize:'0.9rem'}}>{total}</td>
                     <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent text-danger fw-bold" value={r.borrowBottles} onChange={(e) => handleCellChange(i, 'borrowBottles', e.target.value)} placeholder="0" /></td>
                     <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent" value={r.fuelExp} onChange={(e) => handleCellChange(i, 'fuelExp', e.target.value)} placeholder="0" /></td>
                     <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent" value={r.otherExp} onChange={(e) => handleCellChange(i, 'otherExp', e.target.value)} placeholder="0" /></td>
