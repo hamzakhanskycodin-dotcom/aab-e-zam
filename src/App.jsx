@@ -1,53 +1,66 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Login from './Login';
 
 export default function App() {
-    // FIXED: sessionStorage se real-time dynamic secure session token read karna
+    // Session handling
     const [user, setUser] = useState(() => sessionStorage.getItem('loggedInUser'));
 
-    // Reload aur tab security enforce karne ke liye window unload check listener
-    useEffect(() => {
-        const handleReloadLock = () => {
-            sessionStorage.removeItem('loggedInUser');
-        };
-        window.addEventListener('beforeunload', handleReloadLock);
-        return () => window.removeEventListener('beforeunload', handleReloadLock);
-    }, []);
-
+    // 1. Monthly Table Rows State
     const [tableRows, setTableRows] = useState(() => {
         const savedData = localStorage.getItem('permanent_logs_db');
         if (savedData) return JSON.parse(savedData);
         return Array.from({ length: 31 }, (_, i) => ({
-            date: `Day ${i + 1}`, counterSale: '', hamzaSupplier: '', arsalanBhai: '', makkahPlant: '', juttPlant: '', totalSupplyField: '', borrowBottles: '', fuelExp: '', otherExp: ''
+            date: `Day ${i + 1}`,
+            counterSale: '',
+            hamzaSupplier: '',
+            arsalanBhai: '',
+            makkahPlant: '',
+            juttPlant: '',
+            totalSupplyField: '',
+            borrowBottles: '',
+            fuelExp: '',
+            otherExp: ''
         }));
     });
 
-    const [summary, setSummary] = useState({ counterSales: 0, totalSupply: 0, borrowedBottles: 0, hamzaSupplier: 0, arsalanBhai: 0, makkahPlant: 0, juttPlant: 0, fuelExp: 0, otherExp: 0 });
+    // 2. Customers Table State
+    const [customers, setCustomers] = useState(() => {
+        const savedCustomers = localStorage.getItem('customers_db');
+        if (savedCustomers) return JSON.parse(savedCustomers);
+        return [
+            { id: 1, name: 'Ali Ahmed', phone: '0300-1234567', rate: 200, delivered: '', returned: '', paid: '' },
+            { id: 2, name: 'Kashif Khan', phone: '0321-7654321', rate: 220, delivered: '', returned: '', paid: '' }
+        ];
+    });
 
-    useEffect(() => {
-        calcSummary(tableRows);
-    }, [tableRows]);
+    // New Customer Form State
+    const [newCustName, setNewCustName] = useState('');
+    const [newCustPhone, setNewCustPhone] = useState('');
+    const [newCustRate, setNewCustRate] = useState('');
 
-    const calcSummary = (rows) => {
-        let t = { counterSales: 0, totalSupply: 0, borrowedBottles: 0, hamzaSupplier: 0, arsalanBhai: 0, makkahPlant: 0, juttPlant: 0, fuelExp: 0, otherExp: 0 };
-        rows.forEach(r => {
-            t.counterSales += Number(r.counterSale) || 0;
-            t.hamzaSupplier += Number(r.hamzaSupplier) || 0;
-            t.arsalanBhai += Number(r.arsalanBhai) || 0;
-            t.makkahPlant += Number(r.makkahPlant) || 0;
-            t.juttPlant += Number(r.juttPlant) || 0;
-            t.totalSupply += Number(r.totalSupplyField) || 0;
-            t.borrowedBottles += Number(r.borrowBottles) || 0;
-            t.fuelExp += Number(r.fuelExp) || 0;
-            t.otherExp += Number(r.otherExp) || 0;
-        });
-        setSummary(t);
-    };
+    // Live total calculations for top summary cards
+    const summary = tableRows.reduce(
+        (acc, r) => {
+            acc.counterSales += Number(r.counterSale) || 0;
+            acc.hamzaSupplier += Number(r.hamzaSupplier) || 0;
+            acc.arsalanBhai += Number(r.arsalanBhai) || 0;
+            acc.makkahPlant += Number(r.makkahPlant) || 0;
+            acc.juttPlant += Number(r.juttPlant) || 0;
+            acc.totalSupply += Number(r.totalSupplyField) || 0;
+            acc.borrowedBottles += Number(r.borrowBottles) || 0;
+            acc.fuelExp += Number(r.fuelExp) || 0;
+            acc.otherExp += Number(r.otherExp) || 0;
+            return acc;
+        },
+        { counterSales: 0, totalSupply: 0, borrowedBottles: 0, hamzaSupplier: 0, arsalanBhai: 0, makkahPlant: 0, juttPlant: 0, fuelExp: 0, otherExp: 0 }
+    );
 
+    // Monthly Table Input Handler
     const handleCellChange = (idx, field, val) => {
-        const updated = [...tableRows];
-        updated[idx][field] = val;
+        const updated = tableRows.map((row, i) =>
+            i === idx ? { ...row, [field]: val } : row
+        );
         setTableRows(updated);
         localStorage.setItem('permanent_logs_db', JSON.stringify(updated));
 
@@ -58,8 +71,49 @@ export default function App() {
         }).catch(() => console.log("Offline backup safe"));
     };
 
-    if (!user) return <Login onLoginSuccess={(u) => setUser(u)} />;
+    // Customer Table Input Handler
+    const handleCustomerCellChange = (id, field, val) => {
+        const updated = customers.map(c =>
+            c.id === id ? { ...c, [field]: val } : c
+        );
+        setCustomers(updated);
+        localStorage.setItem('customers_db', JSON.stringify(updated));
+    };
 
+    // Add New Customer Function
+    const handleAddCustomer = (e) => {
+        e.preventDefault();
+        if (!newCustName.trim()) return;
+
+        const newCustomer = {
+            id: Date.now(),
+            name: newCustName,
+            phone: newCustPhone || 'N/A',
+            rate: Number(newCustRate) || 200,
+            delivered: '',
+            returned: '',
+            paid: ''
+        };
+
+        const updatedCustomers = [...customers, newCustomer];
+        setCustomers(updatedCustomers);
+        localStorage.setItem('customers_db', JSON.stringify(updatedCustomers));
+
+        setNewCustName('');
+        setNewCustPhone('');
+        setNewCustRate('');
+    };
+
+    // Delete Customer Function
+    const handleDeleteCustomer = (id) => {
+        if (window.confirm("Kya aap waqai is customer ko delete karna chahte hain?")) {
+            const updated = customers.filter(c => c.id !== id);
+            setCustomers(updated);
+            localStorage.setItem('customers_db', JSON.stringify(updated));
+        }
+    };
+
+    if (!user) return <Login onLoginSuccess={(u) => setUser(u)} />;
     return (
         <div className="container-fluid px-4 py-3 bg-light min-vh-100">
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -72,6 +126,7 @@ export default function App() {
                 </div>
             </div>
 
+            {/* Top Cards Section */}
             <div className="row g-3 mb-3">
                 <div className="col-md-4"><div className="p-3 rounded text-white bg-success"><div>Total Counter Sales</div><div className="fs-2 fw-bold">Rs. {summary.counterSales}</div></div></div>
                 <div className="col-md-4"><div className="p-3 rounded text-white bg-primary"><div>Supply bottles</div><div className="fs-2 fw-bold">{summary.totalSupply}</div></div></div>
@@ -90,18 +145,28 @@ export default function App() {
                 <div className="col-md-6"><div className="p-3 rounded text-white bg-dark"><div>Other Exp. Total</div><div className="fs-3 fw-bold">Rs. {summary.otherExp}</div></div></div>
             </div>
 
-            <div className="bg-white p-3 rounded border shadow-sm mb-4">
+            {/* TABLE 1: 31-Day Chart */}
+            <div className="bg-white p-3 rounded border shadow-sm mb-5">
                 <h5 className="fw-bold mb-3 text-dark">📅 31-Day Full Monthly Log Chart</h5>
                 <div className="table-responsive">
                     <table className="table table-bordered text-center align-middle m-0 table-sm">
                         <thead className="table-dark" style={{ fontSize: '0.8rem' }}>
                             <tr>
-                                <th>DATE</th><th style={{ color: '#2ea44f' }}>COUNTER SALE</th><th>HAMZA</th><th>ARSALAN</th><th>MAKKAH</th><th>JUTT</th><th style={{ color: '#0d6efd' }}>SUPPLY BOTTLES</th><th style={{ color: '#dc3545' }}>BORROW</th><th>FUEL</th><th>OTHER</th>
+                                <th>DATE</th>
+                                <th style={{ color: '#2ea44f' }}>COUNTER SALE</th>
+                                <th>HAMZA</th>
+                                <th>ARSALAN</th>
+                                <th>MAKKAH</th>
+                                <th>JUTT</th>
+                                <th style={{ color: '#0d6efd' }}>SUPPLY BOTTLES</th>
+                                <th style={{ color: '#dc3545' }}>BORROW</th>
+                                <th>FUEL</th>
+                                <th>OTHER</th>
                             </tr>
                         </thead>
                         <tbody>
                             {tableRows.map((r, i) => (
-                                <tr key={i}>
+                                <tr key={r.date}>
                                     <td className="fw-bold bg-light" style={{ fontSize: '0.85rem' }}>{r.date}</td>
                                     <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent" value={r.counterSale} onChange={(e) => handleCellChange(i, 'counterSale', e.target.value)} placeholder="0" /></td>
                                     <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent" value={r.hamzaSupplier} onChange={(e) => handleCellChange(i, 'hamzaSupplier', e.target.value)} placeholder="0" /></td>
@@ -114,6 +179,69 @@ export default function App() {
                                     <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent" value={r.otherExp} onChange={(e) => handleCellChange(i, 'otherExp', e.target.value)} placeholder="0" /></td>
                                 </tr>
                             ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {/* TABLE 2: New Customer Management Ledger */}
+            <div className="bg-white p-3 rounded border shadow-sm mb-4">
+                <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+                    <h5 className="fw-bold mb-0 text-dark">👥 Customer Management Ledger & Bottle Records</h5>
+                    <form onSubmit={handleAddCustomer} className="d-flex align-items-center gap-2 flex-wrap">
+                        <input type="text" className="form-control form-control-sm" style={{ width: '160px' }} placeholder="Customer Name" value={newCustName} onChange={e => setNewCustName(e.target.value)} required />
+                        <input type="text" className="form-control form-control-sm" style={{ width: '130px' }} placeholder="Phone/Route" value={newCustPhone} onChange={e => setNewCustPhone(e.target.value)} />
+                        <input type="number" className="form-control form-control-sm" style={{ width: '90px' }} placeholder="Rate (Rs.)" value={newCustRate} onChange={e => setNewCustRate(e.target.value)} />
+                        <button type="submit" className="btn btn-success btn-sm fw-bold px-3">+ Add Customer</button>
+                    </form>
+                </div>
+
+                <div className="table-responsive">
+                    <table className="table table-bordered text-center align-middle m-0 table-sm">
+                        <thead className="table-primary text-dark" style={{ fontSize: '0.8rem' }}>
+                            <tr>
+                                <th>CUSTOMER DETAILS</th>
+                                <th>RATE (RS)</th>
+                                <th style={{ color: '#0d6efd' }}>DELIVERED</th>
+                                <th style={{ color: '#198754' }}>RETURNED</th>
+                                <th style={{ color: '#dc3545' }}>PENDING BOTTLES</th>
+                                <th className="table-secondary">BILLED AMOUNT</th>
+                                <th style={{ color: '#198754' }}>PAID (RS)</th>
+                                <th style={{ color: '#dc3545' }}>BALANCE DUE</th>
+                                <th>ACTION</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {customers.length === 0 ? (
+                                <tr>
+                                    <td colSpan="9" className="text-muted p-3">Koi customer nahi mila. Upar se add karein.</td>
+                                </tr>
+                            ) : (
+                                customers.map((c) => {
+                                    const del = Number(c.delivered) || 0;
+                                    const ret = Number(c.returned) || 0;
+                                    const paid = Number(c.paid) || 0;
+                                    const pendingBottles = del - ret;
+                                    const billedAmount = del * (Number(c.rate) || 0);
+                                    const balanceDue = billedAmount - paid;
+
+                                    return (
+                                        <tr key={c.id}>
+                                            <td className="text-start ps-3 fw-bold bg-light">
+                                                <div>{c.name}</div>
+                                                <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>{c.phone}</small>
+                                            </td>
+                                            <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent fw-bold" value={c.rate} onChange={(e) => handleCustomerCellChange(c.id, 'rate', e.target.value)} /></td>
+                                            <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent text-primary fw-bold" placeholder="0" value={c.delivered} onChange={(e) => handleCustomerCellChange(c.id, 'delivered', e.target.value)} /></td>
+                                            <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent text-success fw-bold" placeholder="0" value={c.returned} onChange={(e) => handleCustomerCellChange(c.id, 'returned', e.target.value)} /></td>
+                                            <td className={`fw-bold ${pendingBottles > 0 ? 'text-danger' : 'text-secondary'}`}>{pendingBottles}</td>
+                                            <td className="fw-bold bg-light">Rs. {billedAmount}</td>
+                                            <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent text-success fw-bold" placeholder="0" value={c.paid} onChange={(e) => handleCustomerCellChange(c.id, 'paid', e.target.value)} /></td>
+                                            <td className={`fw-bold ${balanceDue > 0 ? 'text-danger' : 'text-success'}`}>Rs. {balanceDue}</td>
+                                            <td><button type="button" className="btn btn-outline-danger btn-xs py-0 px-2" style={{ fontSize: '0.75rem' }} onClick={() => handleDeleteCustomer(c.id)}>Delete</button></td>
+                                        </tr>
+                                    );
+                                })
+                            )}
                         </tbody>
                     </table>
                 </div>
