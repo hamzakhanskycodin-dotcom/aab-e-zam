@@ -208,7 +208,7 @@ export default function App() {
 
         {/* Forced Mobile Scroll Container Layer */}
         <div className="w-100 overflow-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <table className="table table-bordered text-center align-middle m-0 table-sm" style={{ minWidth: '1150px', tableLayout: 'fixed' }}>
+          <table className="table table-bordered text-center align-middle m-0 table-sm" >
             <thead className="table-primary text-dark" style={{ fontSize: '0.78rem' }}>
               <tr>
                 <th style={{ width: '220px' }} className="position-sticky start-0 bg-primary text-white shadow-sm">CUSTOMER DETAILS</th>
