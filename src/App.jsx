@@ -187,83 +187,92 @@ export default function App() {
                 </div>
             </div>
 
-            {/* TABLE 2: Customer 31-Day Ledger Section */}
-            <div className="bg-white p-3 rounded border shadow-sm mb-4">
-                <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
-                    <h5 className="fw-bold mb-0 text-dark">👥 Customer 31-Day Delivery Log Ledger</h5>
-                    <form onSubmit={handleAddCustomer} className="d-flex align-items-center gap-2 flex-wrap">
-                        <input type="text" className="form-control form-control-sm" style={{ width: '180px' }} placeholder="Customer Name" value={newCustName} onChange={e => setNewCustName(e.target.value)} required />
-                        <input type="text" className="form-control form-control-sm" style={{ width: '150px' }} placeholder="Phone Details" value={newCustPhone} onChange={e => setNewCustPhone(e.target.value)} />
-                        <button type="submit" className="btn btn-success btn-sm fw-bold px-3">+ Add Customer</button>
-                    </form>
-                </div>
+              {/* TABLE 2: Customer 31-Day Delivery Matrix Layout (Perfect Mobile Scroll Integration) */}
+      <div className="bg-white p-3 rounded border shadow-sm mb-4">
+        <div className="d-flex flex-column gap-3 mb-3">
+          <h5 className="fw-bold mb-0 text-dark">👥 Customer 31-Day Delivery Log Ledger</h5>
+          
+          {/* Mobile responsive input forms layout */}
+          <form onSubmit={handleAddCustomer} className="row g-2 align-items-center">
+            <div className="col-12 col-sm-auto">
+              <input type="text" className="form-control form-control-sm" style={{ minWidth: '180px' }} placeholder="Customer Name" value={newCustName} onChange={e => setNewCustName(e.target.value)} required />
+            </div>
+            <div className="col-12 col-sm-auto">
+              <input type="text" className="form-control form-control-sm" style={{ minWidth: '150px' }} placeholder="Phone Details" value={newCustPhone} onChange={e => setNewCustPhone(e.target.value)} />
+            </div>
+            <div className="col-12 col-sm-auto">
+              <button type="submit" className="btn btn-success btn-sm fw-bold w-100 px-3">+ Add Customer</button>
+            </div>
+          </form>
+        </div>
 
-                <div className="table-responsive">
-                    <table className="table table-bordered text-center align-middle m-0 table-sm" style={{ minWidth: '1750px' }}>
-                        <thead className="table-primary text-dark" style={{ fontSize: '0.78rem' }}>
-                            <tr>
-                                <th style={{ width: '240px' }} className="position-sticky start-0 bg-primary text-white shadow-sm">CUSTOMER DETAILS</th>
-                                {Array.from({ length: 31 }, (_, i) => (
-                                    <th key={i} style={{ minWidth: '42px', fontSize: '0.75rem' }}>D{i + 1}</th>
-                                ))}
-                                <th style={{ minWidth: '65px' }} className="bg-dark text-white">TOTAL</th>
-                                <th style={{ width: '130px' }}>ACTIONS</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {customers.map((c) => {
-                                const totalDelivered = c.days ? c.days.reduce((sum, d) => sum + (Number(d.value) || 0), 0) : 0;
-                                const isEditing = editingId === c.id;
+        {/* Forced Mobile Scroll Container Layer */}
+        <div className="w-100 overflow-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <table className="table table-bordered text-center align-middle m-0 table-sm" style={{ minWidth: '1750px', tableLayout: 'fixed' }}>
+            <thead className="table-primary text-dark" style={{ fontSize: '0.78rem' }}>
+              <tr>
+                <th style={{ width: '220px' }} className="position-sticky start-0 bg-primary text-white shadow-sm">CUSTOMER DETAILS</th>
+                {Array.from({ length: 31 }, (_, i) => (
+                  <th key={i} style={{ width: '42px', fontSize: '0.75rem' }}>D{i + 1}</th>
+                ))}
+                <th style={{ width: '65px' }} className="bg-dark text-white">TOTAL</th>
+                <th style={{ width: '130px' }}>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {customers.map((c) => {
+                const totalDelivered = c.days ? c.days.reduce((sum, d) => sum + (Number(d.value) || 0), 0) : 0;
+                const isEditing = editingId === c.id;
 
-                                                 return (
-                    <tr key={c.id}>
-                      {/* Fixed name column with inline editing compatibility */}
-                      <td className="text-start ps-3 fw-bold bg-light position-sticky start-0 shadow-sm" style={{ zIndex: 1 }}>
-                        {isEditing ? (
-                          <div className="d-flex flex-column gap-1 p-1">
-                            <input type="text" className="form-control form-control-sm p-1" value={editName} onChange={e => setEditName(e.target.value)} />
-                            <input type="text" className="form-control form-control-sm p-1" style={{fontSize: '0.7rem'}} value={editPhone} onChange={e => setEditPhone(e.target.value)} />
-                          </div>
-                        ) : (
-                          <>
-                            <div className="text-truncate" style={{ maxWidth: '200px' }}>{c.name}</div>
-                            <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>{c.phone}</small>
-                          </>
-                        )}
+                return (
+                  <tr key={c.id}>
+                    {/* Locked column that stays visible during touch scroll */}
+                    <td className="text-start ps-3 fw-bold bg-light position-sticky start-0 shadow-sm" style={{ zIndex: 1, left: 0 }}>
+                      {isEditing ? (
+                        <div className="d-flex flex-column gap-1 p-1">
+                          <input type="text" className="form-control form-control-sm p-1" value={editName} onChange={e => setEditName(e.target.value)} />
+                          <input type="text" className="form-control form-control-sm p-1" style={{fontSize: '0.7rem'}} value={editPhone} onChange={e => setEditPhone(e.target.value)} />
+                        </div>
+                      ) : (
+                        <>
+                          <div className="text-truncate" style={{ maxWidth: '190px' }}>{c.name}</div>
+                          <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>{c.phone}</small>
+                        </>
+                      )}
+                    </td>
+                    
+                    {c.days && c.days.map((d) => (
+                      <td key={d.day} className="p-0" style={{ width: '42px' }}>
+                        <input 
+                          type="number" min="0" className="form-control form-control-sm text-center border-0 bg-transparent p-1" 
+                          style={{ fontSize: '0.8rem', height: '35px' }} placeholder="-" value={d.value} 
+                          onChange={(e) => handleCustomerDayChange(c.id, d.day, e.target.value)} 
+                        />
                       </td>
-                      
-                      {c.days && c.days.map((d) => (
-                        <td key={d.day} className="p-0">
-                          <input 
-                            type="number" min="0" className="form-control form-control-sm text-center border-0 bg-transparent p-1" 
-                            style={{ fontSize: '0.8rem', height: '35px' }} placeholder="-" value={d.value} 
-                            onChange={(e) => handleCustomerDayChange(c.id, d.day, e.target.value)} 
-                          />
-                        </td>
-                      ))}
+                    ))}
 
-                      <td className="fw-bold bg-warning-subtle text-dark">{totalDelivered}</td>
-                      
-                      <td>
-                        {isEditing ? (
-                          <div className="d-flex gap-1 justify-content-center">
-                            <button type="button" className="btn btn-success btn-xs px-2 py-0" style={{ fontSize: '0.7rem' }} onClick={() => saveEdit(c.id)}>Save</button>
-                            <button type="button" className="btn btn-secondary btn-xs px-2 py-0" style={{ fontSize: '0.7rem' }} onClick={() => setEditingId(null)}>X</button>
-                          </div>
-                        ) : (
-                          <div className="d-flex gap-1 justify-content-center">
-                            <button type="button" className="btn btn-outline-primary btn-xs px-2 py-0" style={{ fontSize: '0.7rem' }} onClick={() => startEdit(c)}>Edit</button>
-                            <button type="button" className="btn btn-outline-danger btn-xs px-2 py-0" style={{ fontSize: '0.7rem' }} onClick={() => handleDeleteCustomer(c.id)}>Delete</button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                    <td className="fw-bold bg-warning-subtle text-dark">{totalDelivered}</td>
+                    
+                    <td>
+                      {isEditing ? (
+                        <div className="d-flex gap-1 justify-content-center">
+                          <button type="button" className="btn btn-success btn-xs px-2 py-0" style={{ fontSize: '0.7rem' }} onClick={() => saveEdit(c.id)}>Save</button>
+                          <button type="button" className="btn btn-secondary btn-xs px-2 py-0" style={{ fontSize: '0.7rem' }} onClick={() => setEditingId(null)}>X</button>
+                        </div>
+                      ) : (
+                        <div className="d-flex gap-1 justify-content-center">
+                          <button type="button" className="btn btn-outline-primary btn-xs px-2 py-0" style={{ fontSize: '0.7rem' }} onClick={() => startEdit(c)}>Edit</button>
+                          <button type="button" className="btn btn-outline-danger btn-xs px-2 py-0" style={{ fontSize: '0.7rem' }} onClick={() => handleDeleteCustomer(c.id)}>Delete</button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
 
               {/* VERTICAL COLUMN TOTALS ROW */}
               <tr className="bg-dark text-white fw-bold table-dark border-top border-dark">
-                <td className="position-sticky start-0 bg-dark text-white text-end pe-3 text-uppercase shadow-sm" style={{ fontSize: '0.75rem', zIndex: 1 }}>Total Bottles (Day wise)</td>
+                <td className="position-sticky start-0 bg-dark text-white text-end pe-3 text-uppercase shadow-sm" style={{ fontSize: '0.75rem', zIndex: 1, left: 0 }}>Total Bottles (Day wise)</td>
                 {Array.from({ length: 31 }, (_, i) => {
                   const dayNum = i + 1;
                   const dayColumnTotal = customers.reduce((sum, c) => {
@@ -284,6 +293,7 @@ export default function App() {
             </tbody>
           </table>
         </div>
+        <small className="text-muted d-block mt-2">💡 Mobile Touch View: Table ko ungli se right swipe kar ke poore 31 din easily control karein.</small>
       </div>
     </div>
   );
