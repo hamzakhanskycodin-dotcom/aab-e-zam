@@ -183,69 +183,80 @@ export default function App() {
                     </table>
                 </div>
             </div>
-            {/* TABLE 2: New Customer Management Ledger */}
-            <div className="bg-white p-3 rounded border shadow-sm mb-4">
-                <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
-                    <h5 className="fw-bold mb-0 text-dark">👥 Customer Management Ledger & Bottle Records</h5>
-                    <form onSubmit={handleAddCustomer} className="d-flex align-items-center gap-2 flex-wrap">
-                        <input type="text" className="form-control form-control-sm" style={{ width: '160px' }} placeholder="Customer Name" value={newCustName} onChange={e => setNewCustName(e.target.value)} required />
-                        <input type="text" className="form-control form-control-sm" style={{ width: '130px' }} placeholder="Phone/Route" value={newCustPhone} onChange={e => setNewCustPhone(e.target.value)} />
-                        <input type="number" className="form-control form-control-sm" style={{ width: '90px' }} placeholder="Rate (Rs.)" value={newCustRate} onChange={e => setNewCustRate(e.target.value)} />
-                        <button type="submit" className="btn btn-success btn-sm fw-bold px-3">+ Add Customer</button>
-                    </form>
-                </div>
-
-                <div className="table-responsive">
-                    <table className="table table-bordered text-center align-middle m-0 table-sm">
-                        <thead className="table-primary text-dark" style={{ fontSize: '0.8rem' }}>
-                            <tr>
-                                <th>CUSTOMER DETAILS</th>
-                                <th>RATE (RS)</th>
-                                <th style={{ color: '#0d6efd' }}>DELIVERED</th>
-                                <th style={{ color: '#198754' }}>RETURNED</th>
-                                <th style={{ color: '#dc3545' }}>PENDING BOTTLES</th>
-                                <th className="table-secondary">BILLED AMOUNT</th>
-                                <th style={{ color: '#198754' }}>PAID (RS)</th>
-                                <th style={{ color: '#dc3545' }}>BALANCE DUE</th>
-                                <th>ACTION</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {customers.length === 0 ? (
-                                <tr>
-                                    <td colSpan="9" className="text-muted p-3">Koi customer nahi mila. Upar se add karein.</td>
-                                </tr>
-                            ) : (
-                                customers.map((c) => {
-                                    const del = Number(c.delivered) || 0;
-                                    const ret = Number(c.returned) || 0;
-                                    const paid = Number(c.paid) || 0;
-                                    const pendingBottles = del - ret;
-                                    const billedAmount = del * (Number(c.rate) || 0);
-                                    const balanceDue = billedAmount - paid;
-
-                                    return (
-                                        <tr key={c.id}>
-                                            <td className="text-start ps-3 fw-bold bg-light">
-                                                <div>{c.name}</div>
-                                                <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>{c.phone}</small>
-                                            </td>
-                                            <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent fw-bold" value={c.rate} onChange={(e) => handleCustomerCellChange(c.id, 'rate', e.target.value)} /></td>
-                                            <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent text-primary fw-bold" placeholder="0" value={c.delivered} onChange={(e) => handleCustomerCellChange(c.id, 'delivered', e.target.value)} /></td>
-                                            <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent text-success fw-bold" placeholder="0" value={c.returned} onChange={(e) => handleCustomerCellChange(c.id, 'returned', e.target.value)} /></td>
-                                            <td className={`fw-bold ${pendingBottles > 0 ? 'text-danger' : 'text-secondary'}`}>{pendingBottles}</td>
-                                            <td className="fw-bold bg-light">Rs. {billedAmount}</td>
-                                            <td><input type="number" className="form-control form-control-sm text-center border-0 bg-transparent text-success fw-bold" placeholder="0" value={c.paid} onChange={(e) => handleCustomerCellChange(c.id, 'paid', e.target.value)} /></td>
-                                            <td className={`fw-bold ${balanceDue > 0 ? 'text-danger' : 'text-success'}`}>Rs. {balanceDue}</td>
-                                            <td><button type="button" className="btn btn-outline-danger btn-xs py-0 px-2" style={{ fontSize: '0.75rem' }} onClick={() => handleDeleteCustomer(c.id)}>Delete</button></td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                {/* TABLE 2: New Customer Management Ledger with 31 Columns */}
+      <div className="bg-white p-3 rounded border shadow-sm mb-4">
+        <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+          <h5 className="fw-bold mb-0 text-dark">👥 Customer 31-Day Delivery Log Ledger</h5>
+          <form onSubmit={handleAddCustomer} className="d-flex align-items-center gap-2 flex-wrap">
+            <input type="text" className="form-control form-control-sm" style={{width: '180px'}} placeholder="Customer Name" value={newCustName} onChange={e => setNewCustName(e.target.value)} required />
+            <input type="text" className="form-control form-control-sm" style={{width: '150px'}} placeholder="Phone / Route Details" value={newCustPhone} onChange={e => setNewCustPhone(e.target.value)} />
+            <button type="submit" className="btn btn-success btn-sm fw-bold px-3">+ Add Customer</button>
+          </form>
         </div>
-    );
+
+        <div className="table-responsive">
+          <table className="table table-bordered text-center align-middle m-0 table-sm" style={{ minWidth: '1500px' }}>
+            <thead className="table-primary text-dark" style={{ fontSize: '0.78rem' }}>
+              <tr>
+                <th style={{ width: '220px', zIndex: 2 }} className="position-sticky start-0 bg-primary text-white">CUSTOMER DETAILS</th>
+                {Array.from({ length: 31 }, (_, i) => (
+                  <th key={i} style={{ minWidth: '45px', fontSize: '0.75rem' }}>D{i + 1}</th>
+                ))}
+                <th style={{ minWidth: '65px' }} className="bg-dark text-white">TOTAL</th>
+                <th>ACTION</th>
+              </tr>
+            </thead>
+            <tbody>
+              {customers.length === 0 ? (
+                <tr>
+                  <td colSpan="34" className="text-muted p-3">Koi customer nahi mila. Upar se add karein.</td>
+                </tr>
+              ) : (
+                customers.map((c) => {
+                  // Calculate total delivered bottles for the customer automatically
+                  const totalDelivered = c.days.reduce((sum, d) => sum + (Number(d.value) || 0), 0);
+
+                  return (
+                    <tr key={c.id}>
+                      {/* Fixed name column so you can scroll right comfortably */}
+                      <td className="text-start ps-3 fw-bold bg-light position-sticky start-0 shadow-sm" style={{ zIndex: 1 }}>
+                        <div className="text-truncate" style={{ maxWidth: '190px' }}>{c.name}</div>
+                        <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>{c.phone}</small>
+                      </td>
+                      
+                      {/* 31 Horizontal Day Input Fields */}
+                      {c.days.map((d) => (
+                        <td key={d.day} className="p-0">
+                          <input 
+                            type="number" 
+                            min="0"
+                            className="form-control form-control-sm text-center border-0 bg-transparent p-1" 
+                            style={{ fontSize: '0.8rem', height: '35px' }}
+                            placeholder="-" 
+                            value={d.value} 
+                            onChange={(e) => handleCustomerDayChange(c.id, d.day, e.target.value)} 
+                          />
+                        </td>
+                      ))}
+
+                      {/* Total Column */}
+                      <td className="fw-bold bg-warning-subtle text-dark">
+                        {totalDelivered}
+                      </td>
+
+                      {/* Delete Action Button */}
+                      <td>
+                        <button type="button" className="btn btn-outline-danger btn-xs py-0 px-2" style={{ fontSize: '0.7rem' }} onClick={() => handleDeleteCustomer(c.id)}>Delete</button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        <small className="text-muted d-block mt-2">💡 Tip: Har customer ka row horizontal scroll karke Day 1 se Day 31 tak control kar sakte hain. Customer column screen par locked rahega.</small>
+      </div>
+    </div>
+  );
 }
