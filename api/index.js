@@ -1,7 +1,8 @@
 const { MongoClient } = require('mongodb');
 
 // MongoDB Connection String (Atlas URI)
-const uri = process.env.MONGODB_URI || "mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@cluster0.mongodb.net/aabezam?retryWrites=true&w=majority";
+// Example Connection string link inside api/index.js
+const uri = process.env.MONGODB_URI || "mongodb+srv://hamzakhanskycodin_db_user:APNA_PASSWORD_YAHAN_LIKHEIN@cluster0.mongodb.net/aabezam?retryWrites=true&w=majority";
 let client;
 let clientPromise;
 
