@@ -1,129 +1,176 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Login from './Login';
 
 export default function App() {
-    // Session handling
-    const [user, setUser] = useState(() => sessionStorage.getItem('loggedInUser'));
+  const [user, setUser] = useState(() => sessionStorage.getItem('loggedInUser'));
 
-    // 1. Monthly Summary Table Rows State
-    const [tableRows, setTableRows] = useState(() => {
-        const savedData = localStorage.getItem('permanent_logs_db');
-        if (savedData) return JSON.parse(savedData);
-        return Array.from({ length: 31 }, (_, i) => ({
-            date: `Day ${i + 1}`,
-            counterSale: '',
-            hamzaSupplier: '',
-            arsalanBhai: '',
-            makkahPlant: '',
-            juttPlant: '',
-            totalSupplyField: '',
-            borrowBottles: '',
-            fuelExp: '',
-            otherExp: ''
-        }));
+  // Dynamic API Base URL logic for global laptop <-> mobile cross sync (NEW)
+  const API_BASE = window.location.hostname === 'localhost' 
+    ? 'http://localhost:3000' 
+    : window.location.origin;
+
+  // 1. Logs state data rows
+  const [tableRows, setTableRows] = useState(() => {
+    const savedData = localStorage.getItem('permanent_logs_db');
+    if (savedData) return JSON.parse(savedData);
+    return Array.from({ length: 31 }, (_, i) => ({
+      date: `Day ${i + 1}`, counterSale: '', hamzaSupplier: '', arsalanBhai: '', makkahPlant: '', juttPlant: '', totalSupplyField: '', borrowBottles: '', fuelExp: '', otherExp: ''
+    }));
+  });
+
+  // 2. Customers state data structures
+  const [customers, setCustomers] = useState(() => {
+    const savedCustomers = localStorage.getItem('customers_attendance_db');
+    if (savedCustomers) return JSON.parse(savedCustomers);
+    const initialDays = Array.from({ length: 31 }, (_, i) => ({ day: i + 1, value: '' }));
+    return [
+      { id: 1, name: 'Ali Ahmed', phone: '0300-1234567', days: [...initialDays] },
+      { id: 2, name: 'Kashif Khan', phone: '0321-7654321', days: [...initialDays] }
+    ];
+  });
+
+  const [newCustName, setNewCustName] = useState('');
+  const [newCustPhone, setNewCustPhone] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+
+  // 🔄 CROSS-DEVICE INTERVAL POLLING SYSTEM (Mobile sync support verified)
+  useEffect(() => {
+    const syncWithMongoDB = () => {
+      // Global absolute dynamic path allocation
+      fetch(`${API_BASE}/api/logs`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data) && data.length === 31) {
+            setTableRows(data);
+            localStorage.setItem('permanent_logs_db', JSON.stringify(data));
+          }
+        }).catch((e) => console.log("Logs fetch sync error:", e));
+
+      fetch(`${API_BASE}/api/customers`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setCustomers(data);
+            localStorage.setItem('customers_attendance_db', JSON.stringify(data));
+          }
+        }).catch((e) => console.log("Customer fetch sync error:", e));
+    };
+
+    syncWithMongoDB();
+    const interval = setInterval(syncWithMongoDB, 5000); // Har 5 second baad check karega
+    return () => clearInterval(interval);
+  }, [API_BASE]);
+
+  // Summary Metrics calculations for dashboard
+  const summary = tableRows.reduce(
+    (acc, r) => {
+      acc.counterSales += Number(r.counterSale) || 0;
+      acc.hamzaSupplier += Number(r.hamzaSupplier) || 0;
+      acc.arsalanBhai += Number(r.arsalanBhai) || 0;
+      acc.makkahPlant += Number(r.makkahPlant) || 0;
+      acc.juttPlant += Number(r.juttPlant) || 0;
+      acc.totalSupply += Number(r.totalSupplyField) || 0;
+      acc.borrowedBottles += Number(r.borrowBottles) || 0;
+      acc.fuelExp += Number(r.fuelExp) || 0;
+      acc.otherExp += Number(r.otherExp) || 0;
+      return acc;
+    },
+    { counterSales: 0, totalSupply: 0, borrowedBottles: 0, hamzaSupplier: 0, arsalanBhai: 0, makkahPlant: 0, juttPlant: 0, fuelExp: 0, otherExp: 0 }
+  );
+
+  // MongoDB Action Push Handlers (Updated with global endpoints)
+  const handleCellChange = (idx, field, val) => {
+    const updated = tableRows.map((row, i) => i === idx ? { ...row, [field]: val } : row);
+    setTableRows(updated);
+    localStorage.setItem('permanent_logs_db', JSON.stringify(updated));
+
+    fetch(`${API_BASE}/api/logs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated)
+    }).catch(() => console.log("Offline backup safe"));
+  };
+
+  const handleCustomerDayChange = (custId, dayNum, val) => {
+    const updated = customers.map(c => {
+      if (c.id === custId) {
+        const updatedDays = c.days.map(d => d.day === dayNum ? { ...d, value: val } : d);
+        return { ...c, days: updatedDays };
+      }
+      return c;
+    });
+    setCustomers(updated);
+    localStorage.setItem('customers_attendance_db', JSON.stringify(updated));
+
+    fetch(`${API_BASE}/api/customers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated)
+    }).catch(() => console.log("Offline customer mapping safe"));
+  };
+
+  const handleAddCustomer = (e) => {
+    e.preventDefault();
+    if (!newCustName.trim()) return;
+    const newCustomer = {
+      id: Date.now(),
+      name: newCustName,
+      phone: newCustPhone || 'N/A',
+      days: Array.from({ length: 31 }, (_, i) => ({ day: i + 1, value: '' }))
+    };
+    const updated = [...customers, newCustomer];
+    setCustomers(updated);
+    localStorage.setItem('customers_attendance_db', JSON.stringify(updated));
+
+    fetch(`${API_BASE}/api/customers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated)
     });
 
-    // 2. Customers Table State (31-day horizontal matrix layout)
-    const [customers, setCustomers] = useState(() => {
-        const savedCustomers = localStorage.getItem('customers_attendance_db');
-        if (savedCustomers) {
-            try {
-                const parsed = JSON.parse(savedCustomers);
-                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-            } catch (e) { console.error(e); }
-        }
-        const initialDays = Array.from({ length: 31 }, (_, i) => ({ day: i + 1, value: '' }));
-        return [
-            { id: 1, name: 'Ali Ahmed', phone: '0300-1234567', days: [...initialDays] },
-            { id: 2, name: 'Kashif Khan', phone: '0321-7654321', days: [...initialDays] }
-        ];
+    setNewCustName('');
+    setNewCustPhone('');
+  };
+
+  const startEdit = (c) => {
+    setEditingId(c.id);
+    setEditName(c.name);
+    setEditPhone(c.phone);
+  };
+
+  const saveEdit = (id) => {
+    const updated = customers.map(c => c.id === id ? { ...c, name: editName, phone: editPhone } : c);
+    setCustomers(updated);
+    localStorage.setItem('customers_attendance_db', JSON.stringify(updated));
+    
+    fetch(`${API_BASE}/api/customers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated)
     });
+    
+    setEditingId(null);
+  };
 
-    // Controls & Dynamic forms states
-    const [newCustName, setNewCustName] = useState('');
-    const [newCustPhone, setNewCustPhone] = useState('');
-    const [editingId, setEditingId] = useState(null);
-    const [editName, setEditName] = useState('');
-    const [editPhone, setEditPhone] = useState('');
+  const handleDeleteCustomer = (id) => {
+    if(window.confirm("Delete this customer?")) {
+      const updated = customers.filter(c => c.id !== id);
+      setCustomers(updated);
+      localStorage.setItem('customers_attendance_db', JSON.stringify(updated));
+      
+      fetch(`${API_BASE}/api/customers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated)
+      });
+    }
+  };
 
-    // Core Calculator for the 9 original dashboard elements
-    const summary = tableRows.reduce(
-        (acc, r) => {
-            acc.counterSales += Number(r.counterSale) || 0;
-            acc.hamzaSupplier += Number(r.hamzaSupplier) || 0;
-            acc.arsalanBhai += Number(r.arsalanBhai) || 0;
-            acc.makkahPlant += Number(r.makkahPlant) || 0;
-            acc.juttPlant += Number(r.juttPlant) || 0;
-            acc.totalSupply += Number(r.totalSupplyField) || 0;
-            acc.borrowedBottles += Number(r.borrowBottles) || 0;
-            acc.fuelExp += Number(r.fuelExp) || 0;
-            acc.otherExp += Number(r.otherExp) || 0;
-            return acc;
-        },
-        { counterSales: 0, totalSupply: 0, borrowedBottles: 0, hamzaSupplier: 0, arsalanBhai: 0, makkahPlant: 0, juttPlant: 0, fuelExp: 0, otherExp: 0 }
-    );
+  if (!user) return <Login onLoginSuccess={(u) => setUser(u)} />;
 
-    // Table row data updater
-    const handleCellChange = (idx, field, val) => {
-        const updated = tableRows.map((row, i) => i === idx ? { ...row, [field]: val } : row);
-        setTableRows(updated);
-        localStorage.setItem('permanent_logs_db', JSON.stringify(updated));
-    };
-
-    // Day logs update handler for customers
-    const handleCustomerDayChange = (custId, dayNum, val) => {
-        const updated = customers.map(c => {
-            if (c.id === custId) {
-                const updatedDays = c.days.map(d => d.day === dayNum ? { ...d, value: val } : d);
-                return { ...c, days: updatedDays };
-            }
-            return c;
-        });
-        setCustomers(updated);
-        localStorage.setItem('customers_attendance_db', JSON.stringify(updated));
-    };
-
-    // Add Customer routine
-    const handleAddCustomer = (e) => {
-        e.preventDefault();
-        if (!newCustName.trim()) return;
-        const newCustomer = {
-            id: Date.now(),
-            name: newCustName,
-            phone: newCustPhone || 'N/A',
-            days: Array.from({ length: 31 }, (_, i) => ({ day: i + 1, value: '' }))
-        };
-        const updated = [...customers, newCustomer];
-        setCustomers(updated);
-        localStorage.setItem('customers_attendance_db', JSON.stringify(updated));
-        setNewCustName('');
-        setNewCustPhone('');
-    };
-
-    // Controls triggers
-    const startEdit = (c) => {
-        setEditingId(c.id);
-        setEditName(c.name);
-        setEditPhone(c.phone);
-    };
-
-    const saveEdit = (id) => {
-        const updated = customers.map(c => c.id === id ? { ...c, name: editName, phone: editPhone } : c);
-        setCustomers(updated);
-        localStorage.setItem('customers_attendance_db', JSON.stringify(updated));
-        setEditingId(null);
-    };
-
-    const handleDeleteCustomer = (id) => {
-        if (window.confirm("Delete this customer?")) {
-            const updated = customers.filter(c => c.id !== id);
-            setCustomers(updated);
-            localStorage.setItem('customers_attendance_db', JSON.stringify(updated));
-        }
-    };
-
-    if (!user) return <Login onLoginSuccess={(u) => setUser(u)} />;
     return (
         <div className="container-fluid px-4 py-3 bg-light min-vh-100">
             <div className="d-flex justify-content-between align-items-center mb-4">
